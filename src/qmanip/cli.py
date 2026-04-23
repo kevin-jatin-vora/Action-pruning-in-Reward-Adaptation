@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 from textwrap import dedent
 
-from .experiments import get_experiment, list_experiments
+from .experiments import REPO_ROOT, get_experiment, list_experiments
 from .runner import ExperimentRunner
 
 
@@ -60,10 +61,17 @@ def _print_experiment_summary(experiment_slug: str) -> None:
     print("  collect:")
     for step in experiment.collect_steps:
         mode = "per-seed" if step.per_seed else "single-run"
-        print(f"    - {step.name}: {step.script_name} ({mode})")
+        step_workdir = REPO_ROOT / step.workdir if step.workdir else experiment.workdir_path
+        extra = ""
+        if step_workdir != experiment.workdir_path:
+            extra = f", workdir={step_workdir}"
+        print(f"    - {step.name}: {step.script_name} ({mode}{extra})")
     print("  aggregate outputs:")
     for spec in experiment.aggregate_specs:
-        print(f"    - {spec.output_name} <- {spec.input_template}")
+        source_dir = REPO_ROOT / spec.source_workdir if spec.source_workdir else experiment.workdir_path
+        output_dir = REPO_ROOT / spec.output_workdir if spec.output_workdir else experiment.workdir_path
+        source_pattern = source_dir / Path(spec.input_template)
+        print(f"    - {output_dir / spec.output_name} <- {source_pattern}")
     print(f"  plot: {experiment.plot_script or 'None'}")
     if experiment.notes:
         print("  notes:")

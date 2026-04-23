@@ -9,10 +9,28 @@ dist/
 
 .idea/
 .vscode/
+tests/tmpryggm7sf/
 
-# Local curation: keep supplemental and duplicate material out of the
-# Git-focused repository view without deleting it from disk.
-Exp 1 Fixed MDP FIxed R - Copy/
+# Local-only material that is not part of the public repo.
+Exp 1 Fixed MDP FIxed R - Copy/**
+!Exp 1 Fixed MDP FIxed R - Copy/Dollar-Euro/
+!Exp 1 Fixed MDP FIxed R - Copy/Dollar-Euro/QM.py
+!Exp 1 Fixed MDP FIxed R - Copy/Dollar-Euro/QL.py
+!Exp 1 Fixed MDP FIxed R - Copy/Dollar-Euro/SFQL.py
+!Exp 1 Fixed MDP FIxed R - Copy/Dollar-Euro/plot_results.py
+!Exp 1 Fixed MDP FIxed R - Copy/Dollar-Euro/test_ep.txt
+!Exp 1 Fixed MDP FIxed R - Copy/Racetrack/
+!Exp 1 Fixed MDP FIxed R - Copy/Racetrack/QM.py
+!Exp 1 Fixed MDP FIxed R - Copy/Racetrack/QL.py
+!Exp 1 Fixed MDP FIxed R - Copy/Racetrack/SFQL.py
+!Exp 1 Fixed MDP FIxed R - Copy/Racetrack/plot_results.py
+!Exp 1 Fixed MDP FIxed R - Copy/Racetrack/test_ep.txt
+!Exp 1 Fixed MDP FIxed R - Copy/Frozen lake/
+!Exp 1 Fixed MDP FIxed R - Copy/Frozen lake/QM.py
+!Exp 1 Fixed MDP FIxed R - Copy/Frozen lake/QL.py
+!Exp 1 Fixed MDP FIxed R - Copy/Frozen lake/SFQL.py
+!Exp 1 Fixed MDP FIxed R - Copy/Frozen lake/plot_results.py
+!Exp 1 Fixed MDP FIxed R - Copy/Frozen lake/test_ep.txt
 heatmaps/
 rebuttal/
 Stats.py

@@ -27,7 +27,8 @@ class AggregationTests(unittest.TestCase):
                 pd.DataFrame({"reward": [seed, seed + 1]}).to_csv(seed_dir / "ours.csv", index=False)
 
             output_path = aggregate_csv_group(
-                base_dir=tmp_dir,
+                source_dir=tmp_dir,
+                output_dir=tmp_dir,
                 spec=AggregateSpec(output_name="aggregate.csv", input_template="{seed}/ours.csv"),
                 start=0,
                 end=3,

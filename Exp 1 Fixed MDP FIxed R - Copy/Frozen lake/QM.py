@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import seaborn as sns
-
+import pickle
 #np.random.seed(1)
 
 class FrozenLake:
@@ -14,7 +14,7 @@ class FrozenLake:
         self.start = (0, 0)
         self.goal = (size - 1, 1)
         self.hole_prob = 0.1
-        self.holes = [] 
+        self.holes = []
         self.generate_holes()
 
     def generate_holes(self, num_pairs=4):
@@ -33,7 +33,7 @@ class FrozenLake:
     def get_reward1(self, state):
         x, y = state
         if (x, y) == self.holes[0] or (x, y) == self.holes[2]:
-            return 1  
+            return 1
         elif(x, y) == self.holes[1] or (x, y) == self.holes[3]:
             return -1
         elif (x, y) == self.goal:
@@ -44,11 +44,11 @@ class FrozenLake:
     def get_reward2(self, state):
         x, y = state
         if (x, y) == self.holes[1] or (x, y) == self.holes[3]:
-            return 1  
+            return 1
         elif(x, y) == self.holes[0] or (x, y) == self.holes[2]:
             return -1
         elif (x, y) == self.goal:
-            return 0.6 
+            return 0.6
         else:
             return -0.01  # For all other states
 
@@ -83,10 +83,10 @@ class FrozenLake:
         if self.is_valid_position(x, y):
             return x, y
         return state
-     
+
 def display_state(env, agent_location):
     state_grid = np.empty((env.size, env.size), dtype=object)
-    
+
     for i in range(env.size):
         for j in range(env.size):
             if (i, j) == agent_location:
@@ -99,27 +99,27 @@ def display_state(env, agent_location):
                 state_grid[i, j] = 'H'  # Hole
             else:
                 state_grid[i, j] = '-'  # Empty tile
-    
+
     return state_grid
 
 def make_transitions_stochastic(T1, x_percentage):
     S, A, _ = T1.shape
-    
+
     # Calculate the number of states to remain deterministic
     num_deterministic_states = int(S * x_percentage/100)
-    
+
     # Randomly select which states will remain deterministic
     deterministic_states = np.random.choice(S, num_deterministic_states, replace=False)
-    
+
     # Initialize modified transition probability matrix
     T_stochastic = np.zeros_like(T1)
-    
+
     # Modify transition probabilities for deterministic states
     for s in deterministic_states:
         for a in range(A):
             max_prob_index = np.argmax(T1[s, a])
             T_stochastic[s, a, max_prob_index] = 1
-     
+
     # Modify transition probabilities for stochastic states
     stochastic_states = np.setdiff1d(np.arange(S), deterministic_states)
     for s in stochastic_states:
@@ -152,7 +152,7 @@ def restrict_transition(matrix, max_bf):
     normalized_matrix = restricted_matrix / row_sums
 
     return normalized_matrix
-    
+
 env = FrozenLake(size=6)  # Change size as needed
 total_states = env.size * env.size
 T = np.zeros((total_states, 4, total_states))
@@ -192,8 +192,36 @@ A=4
 data = []
 init=int(input("enter start index: "))
 till=int(input("enter end index: "))
+combined_dict = {}
+def load_and_combine_transitions(avg, nst):
+    """Loads and combines the next state dictionaries from both behaviors."""
+    folder_path_b1 = os.path.join(f'{avg}\\behaviors_1_{nst}')
+    folder_path_b2 = os.path.join(f'{avg}\\behaviors_2_{nst}')
+
+    dict_b1_file = os.path.join(folder_path_b1, 'next_states.pkl')
+    dict_b2_file = os.path.join(folder_path_b2, 'next_states.pkl')
+
+    with open(dict_b1_file, 'rb') as f:
+        dict_b1 = pickle.load(f)
+    with open(dict_b2_file, 'rb') as f:
+        dict_b2 = pickle.load(f)
+
+    global combined_dict
+    for s in range(total_states):
+        for a in range(A):
+            key = (s, a)
+            set1 = dict_b1.get(key, set())
+            set2 = dict_b2.get(key, set())
+            combined_dict[key] = list(set1.union(set2))
+    # return combined_dict
+
+def transition(current_state, action):
+    """Returns a list of next states based on the combined dictionary."""
+    global combined_dict
+    key = (current_state, action)
+    return combined_dict.get(key, [])
 for avg in range(init,till): #for avg in range(30):
-    for nst in [1,2,4]:#range(1, 5):
+    for nst in range(1, 5):
         env, T1, terminal_state = get_env(f"{10}//env_{nst}.npy", f"{10}//T_{nst}.npy")
         ts = [state[0] * env.size + state[1] for state in terminal_state]
         x_percentage = 0
@@ -202,89 +230,21 @@ for avg in range(init,till): #for avg in range(30):
         start_time = time.time()
         T1[ts, :, :] = 0
         gamma = 0.9
-        
-        # def compute_q_values(S, A, R, gamma, T=T1):
-        #     # Initialize Q-values to zeros
-        #     Q_new = np.zeros((S, A))
-            
-        #     # Maximum number of iterations for value iteration
-        #     max_iterations = 5000
-            
-        #     # Value iteration
-        #     for _ in range(max_iterations):
-        #         Q = Q_new.copy()
-        #         for s in range(S):
-        #             for a in range(A):
-        #                 q_sa = 0
-        #                 for s_prime in range(S):
-        #                     q_sa += T[s][a][s_prime] * (eval(R.replace('()',f'({(s_prime // env.size, s_prime % env.size)})')) + gamma * np.max(Q[s_prime]))
-        #                 Q_new[s][a] = q_sa
-        #         if np.max(np.abs(Q - Q_new)) < 1e-12:  # Check for convergence
-        #             print("Converged in", _ + 1, "iterations")
-        #             break
-        #         Q = Q_new
-            
-        #     return Q
-        
-        # # Assuming read_mdp function is defined as mentioned in the question
-        # #S, A, R, R2, T, gamma, terminal_state = read_mdp("mdp_exp1.txt")
-        
-        # # Compute Q-values
-        # q_p1 = compute_q_values(env.size*env.size, 4, 'env.get_reward1()', gamma)
-        
-        # # Compute Q-values
-        # q_p2 = compute_q_values(env.size*env.size, 4, 'env.get_reward2()', gamma)
-        
-        # np.save(f'Q1_{nst}.npy',q_p1)
-        # np.save(f'Q2_{nst}.npy',q_p2)
-        # np.save(f'Q_{nst}.npy',compute_q_values(env.size,env.size, 4, 'env.get_reward()', gamma))
-        
-        # def compute_q_values_mu(S, A, R, gamma, T=T1):
-        #     # Initialize Q-values to zeros
-        #     Q_new = np.zeros((S, A))
-            
-        #     # Maximum number of iterations for value iteration
-        #     max_iterations = 5000
-            
-        #     # Value iteration
-        #     for _ in range(max_iterations):
-        #         Q = Q_new.copy()
-        #         for s in range(S):
-        #             for a in range(A):
-        #                 q_sa = 0
-        #                 for s_prime in range(S):
-        #                     q_sa += T[s][a][s_prime] * (eval(R.replace('()',f'({(s_prime // env.size, s_prime % env.size)})')) + gamma * np.min(Q[s_prime]))
-        #                 Q_new[s][a] = q_sa
-        #         if np.max(np.abs(Q - Q_new)) < 1e-12:  # Check for convergence
-        #             print("Converged in", _ + 1, "iterations")
-        #             break
-        #         Q = Q_new
-            
-        #     return Q
-        # # Compute Q-values
-        # q_m1 = compute_q_values_mu(env.size*env.size, 4, 'env.get_reward1()', gamma)
-        # # Compute Q-values
-        # q_m2 = compute_q_values_mu(env.size*env.size, 4, 'env.get_reward2()', gamma)
-            
-        # q_p1 = np.round(q_p1,4)
-        # q_p2 = np.round(q_p2,4)
-        # q_m1 = np.round(q_m1,4)
-        # q_m2 = np.round(q_m2,4)
-        
-        # np.save(f"{avg}//Q1_{nst}.npy", q_p1)
-        # np.save(f"{avg}//Q2_{nst}.npy", q_p2)
-        
-        def transition(current_state, action):
-            global T1, number_stochastic_transitions
-            p=T1[current_state, action]
-            # if(np.sum(p)==1):
-            t=np.argsort(p)[-number_stochastic_transitions:]
-            return t[np.where(T1[current_state,action,np.argsort(T1[current_state,action])[-number_stochastic_transitions:]]!=0)]
-            # else:
-            #     return []
-        
+        load_and_combine_transitions(avg,nst)
+        # Load the pre-computed Q-values
+        q_p1 = np.load(os.path.join(f'{avg}\\behaviors_1_{nst}', 'Q_star.npy'))
+        q_p2 = np.load(os.path.join(f'{avg}\\behaviors_2_{nst}', 'Q_star.npy'))
+        q_m1 = np.load(os.path.join(f'{avg}\\behaviors_1_{nst}', 'Q_mu.npy'))
+        q_m2 = np.load(os.path.join(f'{avg}\\behaviors_2_{nst}', 'Q_mu.npy'))
+
+        # Load and sum the memorized rewards
+        memorized_R1 = np.load(os.path.join(f'{avg}\\behaviors_1_{nst}', 'memorized_R.npy'))
+        memorized_R2 = np.load(os.path.join(f'{avg}\\behaviors_2_{nst}', 'memorized_R.npy'))
+        real_r = memorized_R1 + memorized_R2
+
+
         start_time = time.time()
-        Q = np.zeros((total_states,A))#q_p1 + q_p2 
+        Q = q_p1 + q_p2
         # Q_UB = Q.copy()
         Q[ts,:] = 0
         for i in range(5000):
@@ -300,29 +260,29 @@ for avg in range(init,till): #for avg in range(30):
                         temp=[]
                         for sdash in transition(s,a):
                             temp.append(env.get_reward(state_to_xy(sdash)) + gamma*np.max(Q_k[sdash]))
-                        Q[s,a] = max(temp)             
+                        Q[s,a] =min(Q_k[s,a],max(temp)) #max(temp)
             # if(i>0):
             #     if(np.round(np.max(np.abs(Q_k-Q)),7)> np.round(gamma*(np.max(np.abs(U-Udash))),7)):
             #         # print(np.max(np.abs(Q_k-Q)))
             #         # print(gamma*(np.max(np.abs(U-Udash))))
             #         print(i)
             #         # input()
-            if(np.max(np.abs(Q-Q_k))<1e-12): 
+            if(np.max(np.abs(Q-Q_k))<1e-12):
                 print(i)
                 print("------------")
                 break
-        
+
         # Q = np.round(Q,2)
-        
+
         Qm = np.zeros((total_states,A))
-        # o1 = q_p1 + q_m2
-        # o2 = q_p2 + q_m1
-        
-        # for s in range(total_states):
-        #     for a in range(A):
-        #         Qm[s,a]= max(o1[s,a], o2[s,a])
-        
-        
+        o1 = q_p1 + q_m2
+        o2 = q_p2 + q_m1
+
+        for s in range(total_states):
+            for a in range(A):
+                Qm[s,a]= max(o1[s,a], o2[s,a])
+
+
         Qm[ts,:] = 0
         for i in range(5000):
             if(i>0):
@@ -337,7 +297,7 @@ for avg in range(init,till): #for avg in range(30):
                         temp=[]
                         for sdash in transition(s,a):
                             temp.append(env.get_reward(state_to_xy(sdash)) + gamma*np.max(Qm_k[sdash]))
-                        Qm[s,a] = min(temp)
+                        Qm[s,a] = max(Qm_k[s,a],min(temp)) #min(temp)
             # if(i>0):
             #     if(np.max(np.abs(Qm_k-Qm))> gamma*(np.max(np.abs(U-Udash)))):
             #         # print("lowerbound")
@@ -347,15 +307,15 @@ for avg in range(init,till): #for avg in range(30):
                 print(i)
                 print("------------")
                 break
-        
+
         # Qm = np.round(Qm,2)
-        
+
         info=[]
         final_actions=set(list(range(A)))
         prune={}
         state_action={}
-        
-        
+
+
         for i in range(total_states):
             alist=[]
             for action_l in range(A):
@@ -364,12 +324,30 @@ for avg in range(init,till): #for avg in range(30):
                         continue
                     if( Qm[i, action_l]-Q[i,action_u] > 1e-7 ):
                         info.append((i,action_l, action_u))
-                        alist.append(action_u)
+                        # alist.append(action_u)
+                        if(action_u not in np.where(Q[i]==np.max(Q[i]))[0]):
+                            alist.append(action_u)
             prune[i]= set(alist)
             state_action[i]= final_actions.difference(set(alist))
-            
+
         # print(total_states*A-sum([len(state_action[i]) for i in state_action.keys()]))
-        
+        xy_s={}
+        for i in range(env.size):
+            for j in range(env.size):
+                xy_s[i*env.size + j]=(i,j)
+
+        heat_map=np.zeros((env.size,env.size))
+        for key in state_action.keys():
+            heat_map[xy_s[key]]=len(state_action[key])
+
+
+        cmap =  'Blues' #sns.cm.flare
+        ax = sns.heatmap(heat_map, linewidth=0.5, linecolor='black', cmap=cmap, alpha=0.6)
+        #ax.invert_yaxis()
+        plt.savefig(f"{avg}//heatmap_FL_{x_percentage}_{number_stochastic_transitions}.png",bbox_inches = 'tight', dpi=1000)
+        plt.show()
+        # input()
+
         ########################################################################################
         violations1=[]
         violations2=[]
@@ -404,8 +382,8 @@ for avg in range(init,till): #for avg in range(30):
                     bas = list(state_action[state_index])
                     action = bas[best_action_index]
                 return action
-       
-        
+
+
         def test_q(e=30):
             global Q
             episode_rewards=[]
@@ -429,10 +407,10 @@ for avg in range(init,till): #for avg in range(30):
                     total_reward += reward
                     state = next_state
                 episode_rewards.append(total_reward)
-            return np.mean(episode_rewards) 
+            return np.mean(episode_rewards)
 
 
-        
+
         def q_learning(N_steps, test_steps, env, learning_rate, discount_factor, epsilon_initial, epsilon_decay, epsilon_min, num_episodes):
             num_actions = 4
             global Q
@@ -440,14 +418,14 @@ for avg in range(init,till): #for avg in range(30):
             episode_rewards = []
             state = 0
             step = 1
-        
+
             while step < N_steps+1:
                 if state in ts:
                     # Decay epsilon
                     epsilon = max(epsilon * epsilon_decay, epsilon_min)
                     # Reset to the initial state if the agent reaches a terminal state
                     state = 0
-        
+
                 action = epsilon_greedy_policy(state, epsilon,Q)
                 next_state = np.random.choice(total_states, p=T1[state, action, :])
                 reward = env.get_reward((next_state // env.size, next_state % env.size))
@@ -455,17 +433,17 @@ for avg in range(init,till): #for avg in range(30):
                 Q[state, action] += learning_rate * (
                     reward + discount_factor * np.max(Q[next_state]) - Q[state, action]
                 )
-        
+
                 state = next_state
                 step += 1
-            
+
                 if step % test_steps == 0:
                     tr = test_q()
                     episode_rewards.append(tr)
             return episode_rewards
-    
-        
-        
+
+
+
         # Define Q-learning parameters
         learning_rate = 0.1
         discount_factor = 0.9
@@ -474,49 +452,38 @@ for avg in range(init,till): #for avg in range(30):
         epsilon_min = 0.01
         # num_episodes = 2000
         max_steps = 20
-        
+
         N_steps=4800*5
         test_steps = 8 #12
         num_episodes = int(N_steps/test_steps)
-        
+
         # Run multiple episodes and average results
         num_runs = 1
         average_rewards = np.zeros(num_episodes)
         rewards_run = np.zeros((num_runs, num_episodes))
-        
+
         for run in range(num_runs):
             Q = np.zeros((total_states,A))
             #np.random.seed(run)
             episode_rewards = q_learning(N_steps,test_steps,env, learning_rate, discount_factor, epsilon_initial, epsilon_decay, epsilon_min, num_episodes)
             rewards_run[run] = episode_rewards
             average_rewards += np.array(episode_rewards)
-        
+
         average_rewards /= num_runs
         end_time = time.time()
-        pd.DataFrame(rewards_run).to_csv(f'{avg}//ours_{x_percentage}_{number_stochastic_transitions}_new.csv')
+        pd.DataFrame(rewards_run).to_csv(f'{avg}//ours_{x_percentage}_{number_stochastic_transitions}.csv')
         # Plot average Q value per episode over 5 runs
-        # window_size = 50
-        # plt.plot(range(num_episodes - window_size + 1), np.convolve(average_rewards, np.ones(window_size), 'valid') / window_size)
-        # plt.xlabel('Episode')
-        # plt.ylabel('Average Reward')
-        # plt.title(f'Average Reward per Episode over {num_runs} Runs')
-        # plt.show()
-        
-        
-        xy_s={}
-        for i in range(env.size):
-            for j in range(env.size):
-                xy_s[i*env.size + j]=(i,j) 
-        
-        heat_map=np.zeros((env.size,env.size))    
-        for key in state_action.keys():
-            heat_map[xy_s[key]]=len(state_action[key])
-        
-        
-        cmap =  'Blues' #sns.cm.flare
-        ax = sns.heatmap(heat_map, linewidth=0.5, linecolor='black', cmap=cmap, alpha=0.6)
-        #ax.invert_yaxis()
-        plt.savefig(f"{avg}//heatmap_FL_{x_percentage}_{number_stochastic_transitions}_new.png",bbox_inches = 'tight', dpi=1000)
+        window_size = 50
+        plt.plot(range(num_episodes - window_size + 1), np.convolve(average_rewards, np.ones(window_size), 'valid') / window_size)
+        plt.xlabel('Episode')
+        plt.ylabel('Average Reward')
+        plt.title(f'Average Reward per Episode over {num_runs} Runs')
         plt.show()
-        data.append((avg, f"Frozen Lake_{x_percentage}_{number_stochastic_transitions}_new", env.size, A, env.size*A-sum([len(state_action[i]) for i in state_action.keys()]), end_time-start_time))
-pd.DataFrame(data, columns=['Run', 'Domain', '|S|', '|A|', 'Actions Pruned', 'QM']).to_csv(f"Data_RA_{till-1}_new.csv")
+
+
+
+        data.append((avg, f"Frozen Lake_{x_percentage}_{number_stochastic_transitions}", env.size, A, env.size*A-sum([len(state_action[i]) for i in state_action.keys()]), end_time-start_time))
+pd.DataFrame(data, columns=['Run', 'Domain', '|S|', '|A|', 'Actions Pruned', 'QM']).to_csv(f"Data_RA_{till-1}.csv")
+f = open("test_ep.txt", "w")
+f.write(f"{test_steps}")
+f.close()

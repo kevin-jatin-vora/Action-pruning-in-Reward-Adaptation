@@ -126,7 +126,7 @@ start_index, end_index = parse_seed_range("start: ", "end: ")
 for avg in range(start_index, end_index):
     if(not os.path.isdir(str(avg))):
         os.mkdir(str(avg))
-    runpy.run_path("Generator.py")
+    runpy.run_path("generate_mdp.py")
     shutil.move(f"mdp_exp_{'01'}.txt",f"{avg}//mdp_exp_{'01'}.txt")
     S, A, R, R2, T, gamma,terminal_state = read_mdp(f"{avg}//mdp_exp_{'01'}.txt")
     # np.random.seed(avg)  

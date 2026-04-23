@@ -14,12 +14,16 @@ class LegacyCommand:
     stdin_template: str | None = None
     per_seed: bool = False
     create_seed_dirs: bool = False
+    workdir: str | None = None
 
 
 @dataclass(frozen=True)
 class AggregateSpec:
     output_name: str
     input_template: str
+    source_workdir: str | None = None
+    output_workdir: str | None = None
+    legacy_output_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -39,22 +43,24 @@ class ExperimentConfig:
         return REPO_ROOT / self.workdir
 
 
-def _aggregate_family(
-    outputs: list[str],
-    input_prefix: str | None = None,
+def _results_dir(slug: str) -> str:
+    return fr"results\{slug}"
+
+
+def _specs(
+    names: list[tuple[str, str]],
+    *,
+    source_workdir: str | None = None,
+    output_workdir: str | None = None,
 ) -> tuple[AggregateSpec, ...]:
-    prefix = input_prefix
-    specs: list[AggregateSpec] = []
-    for output_name in outputs:
-        input_name = output_name if prefix is None else output_name.replace(prefix.split("_")[0], input_prefix.split("_")[0], 1)
-        specs.append(AggregateSpec(output_name=output_name, input_template=f"{{seed}}/{input_name}"))
-    return tuple(specs)
-
-
-def _specs(names: list[tuple[str, str]]) -> tuple[AggregateSpec, ...]:
     return tuple(
-        AggregateSpec(output_name=output_name, input_template=f"{{seed}}/{input_name}")
-        for output_name, input_name in names
+        AggregateSpec(
+            output_name=output_name,
+            input_template=input_template,
+            source_workdir=source_workdir,
+            output_workdir=output_workdir,
+        )
+        for output_name, input_template in names
     )
 
 
@@ -66,35 +72,67 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
         description="Fixed gridworld reward-adaptation experiment with linear reward combination.",
         workdir=r"Exp 1 Fixed MDP FIxed R\Dollar-Euro",
         collect_steps=(
-            LegacyCommand(name="QL baseline", script_name="QL_RL.py"),
+            LegacyCommand(name="QL baseline", script_name="QL.py"),
             LegacyCommand(
                 name="SFQL baseline",
-                script_name="SFQL_try1.py",
+                script_name="SFQL.py",
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
-                name="Q-M / M-Q-M legacy run",
-                script_name="DE_correction_inR.py",
+                name="Clipped QL baseline",
+                script_name="clipped_QL_proposed_soln.py",
                 stdin_template="{start}\n{end}\n",
             ),
+            LegacyCommand(
+                name="M-Q-M",
+                script_name="MQM.py",
+                stdin_template="{start}\n{end}\n",
+            ),
+            LegacyCommand(
+                name="Q-M",
+                script_name="QM.py",
+                stdin_template="{start}\n{end}\n",
+                workdir=r"Exp 1 Fixed MDP FIxed R - Copy\Dollar-Euro",
+            ),
         ),
-        aggregate_specs=_specs(
-            [
-                ("ours_0_1.csv", "ours_0_1.csv"),
-                ("ours_0_2.csv", "ours_0_2.csv"),
-                ("ours_0_3.csv", "ours_0_3.csv"),
-                ("ours_0_4.csv", "ours_0_4.csv"),
-                ("QL_0_1.csv", "QL_0_1.csv"),
-                ("QL_0_2.csv", "QL_0_2.csv"),
-                ("QL_0_3.csv", "QL_0_3.csv"),
-                ("QL_0_4.csv", "QL_0_4.csv"),
-                ("sfql_0_1.csv", "sfql_0_1.csv"),
-                ("sfql_0_2.csv", "sfql_0_2.csv"),
-                ("sfql_0_3.csv", "sfql_0_3.csv"),
-                ("sfql_0_4.csv", "sfql_0_4.csv"),
-            ]
+        aggregate_specs=(
+            *_specs(
+                [
+                    ("mqm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("mqm_0_2.csv", "{seed}/ours_0_2.csv"),
+                    ("mqm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("mqm_0_4.csv", "{seed}/ours_0_4.csv"),
+                    ("ql_0_1.csv", "{seed}/QL_0_1.csv"),
+                    ("ql_0_2.csv", "{seed}/QL_0_2.csv"),
+                    ("ql_0_3.csv", "{seed}/QL_0_3.csv"),
+                    ("ql_0_4.csv", "{seed}/QL_0_4.csv"),
+                    ("sfql_0_1.csv", "{seed}/sfql_0_1.csv"),
+                    ("sfql_0_2.csv", "{seed}/sfql_0_2.csv"),
+                    ("sfql_0_3.csv", "{seed}/sfql_0_3.csv"),
+                    ("sfql_0_4.csv", "{seed}/sfql_0_4.csv"),
+                    ("clipped_ql_0_1.csv", "{seed}/clipped_QL_0_1.csv"),
+                    ("clipped_ql_0_2.csv", "{seed}/clipped_QL_0_2.csv"),
+                    ("clipped_ql_0_3.csv", "{seed}/clipped_QL_0_3.csv"),
+                    ("clipped_ql_0_4.csv", "{seed}/clipped_QL_0_4.csv"),
+                ],
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Dollar-Euro",
+                output_workdir=_results_dir("dollar-euro"),
+            ),
+            *_specs(
+                [
+                    ("qm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("qm_0_2.csv", "{seed}/ours_0_2.csv"),
+                    ("qm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("qm_0_4.csv", "{seed}/ours_0_4.csv"),
+                ],
+                source_workdir=r"Exp 1 Fixed MDP FIxed R - Copy\Dollar-Euro",
+                output_workdir=_results_dir("dollar-euro"),
+            ),
         ),
-        plot_script="plot_DE_all.py",
+        plot_script="plot_results.py",
+        notes=(
+            "Aggregated CSVs are written to 'results/dollar-euro/'.",
+        ),
     ),
     ExperimentConfig(
         slug="racetrack",
@@ -105,39 +143,93 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
         collect_steps=(
             LegacyCommand(
                 name="QL baseline",
-                script_name="QL_Racetrack.py",
+                script_name="QL.py",
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
                 name="SFQL baseline",
-                script_name="SFQL_Racetrack.py",
+                script_name="SFQL.py",
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
-                name="Q-M / M-Q-M legacy run",
-                script_name="RA_Racetrack_correction.py",
+                name="Clipped QL baseline",
+                script_name="clipped_QL_proposed_soln.py",
                 stdin_template="{start}\n{end}\n",
             ),
+            LegacyCommand(
+                name="M-Q-M",
+                script_name="MQM.py",
+                stdin_template="{start}\n{end}\n",
+            ),
+            LegacyCommand(
+                name="Q-M",
+                script_name="QM.py",
+                stdin_template="{start}\n{end}\n",
+                workdir=r"Exp 1 Fixed MDP FIxed R - Copy\Racetrack",
+            ),
         ),
-        aggregate_specs=_specs(
-            [
-                ("ours_0_1.csv", "ours_0_1.csv"),
-                ("ours_0_3.csv", "ours_0_3.csv"),
-                ("ours_0_5.csv", "ours_0_5.csv"),
-                ("ours_0_7.csv", "ours_0_7.csv"),
-                ("QL_0_1.csv", "QL_0_1.csv"),
-                ("QL_0_3.csv", "QL_0_3.csv"),
-                ("QL_0_5.csv", "QL_0_5.csv"),
-                ("QL_0_7.csv", "QL_0_7.csv"),
-                ("SFQL_0_1.csv", "SFQL_0_1.csv"),
-                ("SFQL_0_3.csv", "SFQL_0_3.csv"),
-                ("SFQL_0_5.csv", "SFQL_0_5.csv"),
-                ("SFQL_0_7.csv", "SFQL_0_7.csv"),
-            ]
+        aggregate_specs=(
+            *_specs(
+                [
+                    ("mqm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("mqm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("mqm_0_5.csv", "{seed}/ours_0_5.csv"),
+                    ("mqm_0_7.csv", "{seed}/ours_0_7.csv"),
+                    ("ql_0_1.csv", "{seed}/QL_0_1.csv"),
+                    ("ql_0_3.csv", "{seed}/QL_0_3.csv"),
+                    ("ql_0_5.csv", "{seed}/QL_0_5.csv"),
+                    ("ql_0_7.csv", "{seed}/QL_0_7.csv"),
+                    ("sfql_0_1.csv", "{seed}/SFQL_0_1.csv"),
+                    ("sfql_0_3.csv", "{seed}/SFQL_0_3.csv"),
+                    ("sfql_0_5.csv", "{seed}/SFQL_0_5.csv"),
+                    ("sfql_0_7.csv", "{seed}/SFQL_0_7.csv"),
+                ],
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Racetrack",
+                output_workdir=_results_dir("racetrack"),
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_1.csv",
+                input_template="{seed}/ClippedQL_0_1.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Racetrack",
+                output_workdir=_results_dir("racetrack"),
+                legacy_output_name="clipped_QL_0_1.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_3.csv",
+                input_template="{seed}/ClippedQL_0_3.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Racetrack",
+                output_workdir=_results_dir("racetrack"),
+                legacy_output_name="clipped_QL_0_3.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_5.csv",
+                input_template="{seed}/ClippedQL_0_5.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Racetrack",
+                output_workdir=_results_dir("racetrack"),
+                legacy_output_name="clipped_QL_0_5.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_7.csv",
+                input_template="{seed}/ClippedQL_0_7.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Racetrack",
+                output_workdir=_results_dir("racetrack"),
+                legacy_output_name="clipped_QL_0_7.csv",
+            ),
+            *_specs(
+                [
+                    ("qm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("qm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("qm_0_5.csv", "{seed}/ours_0_5.csv"),
+                    ("qm_0_7.csv", "{seed}/ours_0_7.csv"),
+                ],
+                source_workdir=r"Exp 1 Fixed MDP FIxed R - Copy\Racetrack",
+                output_workdir=_results_dir("racetrack"),
+            ),
         ),
-        plot_script="plot_RT_all.py",
+        plot_script="plot_results.py",
         notes=(
-            "This legacy workflow expects seed folders with pre-generated T_*.npy files.",
+            "This workflow expects seed folders with pre-generated T_*.npy files.",
+            "Aggregated CSVs are written to 'results/racetrack/'.",
         ),
     ),
     ExperimentConfig(
@@ -154,34 +246,88 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
             ),
             LegacyCommand(
                 name="SFQL baseline",
-                script_name="sfql.py",
+                script_name="SFQL.py",
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
-                name="Q-M / M-Q-M legacy run",
-                script_name="QM.py",
+                name="Clipped QL baseline",
+                script_name="clipped_QL_proposed_soln.py",
                 stdin_template="{start}\n{end}\n",
             ),
+            LegacyCommand(
+                name="M-Q-M",
+                script_name="MQM.py",
+                stdin_template="{start}\n{end}\n",
+            ),
+            LegacyCommand(
+                name="Q-M",
+                script_name="QM.py",
+                stdin_template="{start}\n{end}\n",
+                workdir=r"Exp 1 Fixed MDP FIxed R - Copy\Frozen lake",
+            ),
         ),
-        aggregate_specs=_specs(
-            [
-                ("ours_0_1.csv", "ours_0_1.csv"),
-                ("ours_0_2.csv", "ours_0_2.csv"),
-                ("ours_0_3.csv", "ours_0_3.csv"),
-                ("ours_0_4.csv", "ours_0_4.csv"),
-                ("QL_0_1.csv", "QL_0_1.csv"),
-                ("QL_0_2.csv", "QL_0_2.csv"),
-                ("QL_0_3.csv", "QL_0_3.csv"),
-                ("QL_0_4.csv", "QL_0_4.csv"),
-                ("SFQL_0_1.csv", "SFQL_0_1.csv"),
-                ("SFQL_0_2.csv", "SFQL_0_2.csv"),
-                ("SFQL_0_3.csv", "SFQL_0_3.csv"),
-                ("SFQL_0_4.csv", "SFQL_0_4.csv"),
-            ]
+        aggregate_specs=(
+            *_specs(
+                [
+                    ("mqm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("mqm_0_2.csv", "{seed}/ours_0_2.csv"),
+                    ("mqm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("mqm_0_4.csv", "{seed}/ours_0_4.csv"),
+                    ("ql_0_1.csv", "{seed}/QL_0_1.csv"),
+                    ("ql_0_2.csv", "{seed}/QL_0_2.csv"),
+                    ("ql_0_3.csv", "{seed}/QL_0_3.csv"),
+                    ("ql_0_4.csv", "{seed}/QL_0_4.csv"),
+                    ("sfql_0_1.csv", "{seed}/SFQL_0_1.csv"),
+                    ("sfql_0_2.csv", "{seed}/SFQL_0_2.csv"),
+                    ("sfql_0_3.csv", "{seed}/SFQL_0_3.csv"),
+                    ("sfql_0_4.csv", "{seed}/SFQL_0_4.csv"),
+                ],
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Frozen lake",
+                output_workdir=_results_dir("frozen-lake"),
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_1.csv",
+                input_template="{seed}/ClippedQL_0_1.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Frozen lake",
+                output_workdir=_results_dir("frozen-lake"),
+                legacy_output_name="clipped_QL_0_1.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_2.csv",
+                input_template="{seed}/ClippedQL_0_2.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Frozen lake",
+                output_workdir=_results_dir("frozen-lake"),
+                legacy_output_name="clipped_QL_0_2.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_3.csv",
+                input_template="{seed}/ClippedQL_0_3.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Frozen lake",
+                output_workdir=_results_dir("frozen-lake"),
+                legacy_output_name="clipped_QL_0_3.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_4.csv",
+                input_template="{seed}/ClippedQL_0_4.csv",
+                source_workdir=r"Exp 1 Fixed MDP FIxed R\Frozen lake",
+                output_workdir=_results_dir("frozen-lake"),
+                legacy_output_name="clipped_QL_0_4.csv",
+            ),
+            *_specs(
+                [
+                    ("qm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("qm_0_2.csv", "{seed}/ours_0_2.csv"),
+                    ("qm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("qm_0_4.csv", "{seed}/ours_0_4.csv"),
+                ],
+                source_workdir=r"Exp 1 Fixed MDP FIxed R - Copy\Frozen lake",
+                output_workdir=_results_dir("frozen-lake"),
+            ),
         ),
-        plot_script="plot.py",
+        plot_script="plot_results.py",
         notes=(
-            "The frozen-lake scripts reuse legacy environment snapshots stored in the seed folders.",
+            "The Frozen Lake scripts reuse legacy environment snapshots stored in the seed folders.",
+            "Aggregated CSVs are written to 'results/frozen-lake/'.",
         ),
     ),
     ExperimentConfig(
@@ -193,7 +339,7 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
         collect_steps=(
             LegacyCommand(
                 name="Generate per-seed MDPs",
-                script_name="Generator.py",
+                script_name="generate_mdp.py",
                 per_seed=True,
                 create_seed_dirs=True,
             ),
@@ -208,25 +354,72 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
-                name="Q-M / M-Q-M legacy run",
-                script_name="RA_autogen_correction_inR.py",
+                name="Clipped QL baseline",
+                script_name="clipped_QL_proposed_soln.py",
+                stdin_template="{start}\n{end}\n",
+            ),
+            LegacyCommand(
+                name="M-Q-M",
+                script_name="MQM.py",
+                stdin_template="{start}\n{end}\n",
+            ),
+            LegacyCommand(
+                name="Q-M",
+                script_name="QM.py",
                 stdin_template="{start}\n{end}\n",
             ),
         ),
-        aggregate_specs=_specs(
-            [
-                ("ours_0_1.csv", "ours_0_1.csv"),
-                ("ours_0_3.csv", "ours_0_3.csv"),
-                ("ours_0_5.csv", "ours_0_5.csv"),
-                ("QL_0_1.csv", "QL_0_1.csv"),
-                ("QL_0_3.csv", "QL_0_3.csv"),
-                ("QL_0_5.csv", "QL_0_5.csv"),
-                ("sfql_0_1.csv", "SFQL_0_1.csv"),
-                ("sfql_0_3.csv", "SFQL_0_3.csv"),
-                ("sfql_0_5.csv", "SFQL_0_5.csv"),
-            ]
+        aggregate_specs=(
+            *_specs(
+                [
+                    ("mqm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("mqm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("mqm_0_5.csv", "{seed}/ours_0_5.csv"),
+                    ("ql_0_1.csv", "{seed}/QL_0_1.csv"),
+                    ("ql_0_3.csv", "{seed}/QL_0_3.csv"),
+                    ("ql_0_5.csv", "{seed}/QL_0_5.csv"),
+                    ("sfql_0_1.csv", "{seed}/sfql_0_1.csv"),
+                    ("sfql_0_3.csv", "{seed}/sfql_0_3.csv"),
+                    ("sfql_0_5.csv", "{seed}/sfql_0_5.csv"),
+                ],
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_135",
+                output_workdir=_results_dir("autogenerated-linear"),
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_1.csv",
+                input_template="{seed}/ClippedQL_0_1.csv",
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_135",
+                output_workdir=_results_dir("autogenerated-linear"),
+                legacy_output_name="clipped-QL_0_1.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_3.csv",
+                input_template="{seed}/ClippedQL_0_3.csv",
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_135",
+                output_workdir=_results_dir("autogenerated-linear"),
+                legacy_output_name="clipped-QL_0_3.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_5.csv",
+                input_template="{seed}/ClippedQL_0_5.csv",
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_135",
+                output_workdir=_results_dir("autogenerated-linear"),
+                legacy_output_name="clipped-QL_0_5.csv",
+            ),
+            *_specs(
+                [
+                    ("qm_0_1.csv", "{seed}/ours_0_1_new.csv"),
+                    ("qm_0_3.csv", "{seed}/ours_0_3_new.csv"),
+                    ("qm_0_5.csv", "{seed}/ours_0_5_new.csv"),
+                ],
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_135",
+                output_workdir=_results_dir("autogenerated-linear"),
+            ),
         ),
-        plot_script="plot_all.py",
+        plot_script="plot_results.py",
+        notes=(
+            "Aggregated CSVs are written to 'results/autogenerated-linear/'.",
+        ),
     ),
     ExperimentConfig(
         slug="autogenerated-nonlinear",
@@ -237,7 +430,7 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
         collect_steps=(
             LegacyCommand(
                 name="Generate per-seed MDPs",
-                script_name="Generator.py",
+                script_name="generate_mdp.py",
                 per_seed=True,
                 create_seed_dirs=True,
             ),
@@ -252,25 +445,72 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
-                name="Q-M / M-Q-M legacy run",
-                script_name="RA_autogen_correction_inR.py",
+                name="Clipped QL baseline",
+                script_name="clipped_QL_proposed_soln.py",
+                stdin_template="{start}\n{end}\n",
+            ),
+            LegacyCommand(
+                name="M-Q-M",
+                script_name="MQM.py",
+                stdin_template="{start}\n{end}\n",
+            ),
+            LegacyCommand(
+                name="Q-M",
+                script_name="QM.py",
                 stdin_template="{start}\n{end}\n",
             ),
         ),
-        aggregate_specs=_specs(
-            [
-                ("ours_0_1.csv", "ours_0_1.csv"),
-                ("ours_0_3.csv", "ours_0_3.csv"),
-                ("ours_0_5.csv", "ours_0_5.csv"),
-                ("QL_0_1.csv", "QL_0_1.csv"),
-                ("QL_0_3.csv", "QL_0_3.csv"),
-                ("QL_0_5.csv", "QL_0_5.csv"),
-                ("sfql_0_1.csv", "SFQL_0_1.csv"),
-                ("sfql_0_3.csv", "SFQL_0_3.csv"),
-                ("sfql_0_5.csv", "SFQL_0_5.csv"),
-            ]
+        aggregate_specs=(
+            *_specs(
+                [
+                    ("mqm_0_1.csv", "{seed}/ours_0_1.csv"),
+                    ("mqm_0_3.csv", "{seed}/ours_0_3.csv"),
+                    ("mqm_0_5.csv", "{seed}/ours_0_5.csv"),
+                    ("ql_0_1.csv", "{seed}/QL_0_1.csv"),
+                    ("ql_0_3.csv", "{seed}/QL_0_3.csv"),
+                    ("ql_0_5.csv", "{seed}/QL_0_5.csv"),
+                    ("sfql_0_1.csv", "{seed}/sfql_0_1.csv"),
+                    ("sfql_0_3.csv", "{seed}/sfql_0_3.csv"),
+                    ("sfql_0_5.csv", "{seed}/sfql_0_5.csv"),
+                ],
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_nonlinear - Copy",
+                output_workdir=_results_dir("autogenerated-nonlinear"),
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_1.csv",
+                input_template="{seed}/ClippedQL_0_1.csv",
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_nonlinear - Copy",
+                output_workdir=_results_dir("autogenerated-nonlinear"),
+                legacy_output_name="clipped-QL_0_1.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_3.csv",
+                input_template="{seed}/ClippedQL_0_3.csv",
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_nonlinear - Copy",
+                output_workdir=_results_dir("autogenerated-nonlinear"),
+                legacy_output_name="clipped-QL_0_3.csv",
+            ),
+            AggregateSpec(
+                output_name="clipped_ql_0_5.csv",
+                input_template="{seed}/ClippedQL_0_5.csv",
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_nonlinear - Copy",
+                output_workdir=_results_dir("autogenerated-nonlinear"),
+                legacy_output_name="clipped-QL_0_5.csv",
+            ),
+            *_specs(
+                [
+                    ("qm_0_1.csv", "{seed}/ours_0_1_new.csv"),
+                    ("qm_0_3.csv", "{seed}/ours_0_3_new.csv"),
+                    ("qm_0_5.csv", "{seed}/ours_0_5_new.csv"),
+                ],
+                source_workdir=r"Exp 2 Randomized MDP fixed R\Autogenerated_nonlinear - Copy",
+                output_workdir=_results_dir("autogenerated-nonlinear"),
+            ),
         ),
-        plot_script="plot_all.py",
+        plot_script="plot_results.py",
+        notes=(
+            "Aggregated CSVs are written to 'results/autogenerated-nonlinear/'.",
+        ),
     ),
     ExperimentConfig(
         slug="noisy-combination",
@@ -281,7 +521,7 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
         collect_steps=(
             LegacyCommand(
                 name="Generate per-seed MDPs",
-                script_name="Generator.py",
+                script_name="generate_mdp.py",
                 per_seed=True,
                 create_seed_dirs=True,
             ),
@@ -291,32 +531,45 @@ EXPERIMENTS: tuple[ExperimentConfig, ...] = (
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
-                name="M-Q-M legacy run",
-                script_name="RA_autogen_correction_inR.py",
+                name="M-Q-M",
+                script_name="MQM.py",
                 stdin_template="{start}\n{end}\n",
             ),
             LegacyCommand(
-                name="Q-M legacy run",
-                script_name="RA_autogen_correction_inR-copy(1).py",
+                name="Q-M",
+                script_name="QM.py",
                 stdin_template="{start}\n{end}\n",
             ),
         ),
-        aggregate_specs=_specs(
-            [
-                ("QL_0_0.csv", "QL_0_0.csv"),
-                ("ours_0_0.006.csv", "ours_0_0.006.csv"),
-                ("ours_0_0.012.csv", "ours_0_0.012.csv"),
-                ("ours_0_0.018.csv", "ours_0_0.018.csv"),
-                ("ours_0_0.024.csv", "ours_0_0.024.csv"),
-                ("ours_0_0.03.csv", "ours_0_0.03.csv"),
-                ("ours_0_0.006_new_new.csv", "ours_0_0.006_new.csv"),
-                ("ours_0_0.012_new_new.csv", "ours_0_0.012_new.csv"),
-                ("ours_0_0.018_new_new.csv", "ours_0_0.018_new.csv"),
-                ("ours_0_0.024_new_new.csv", "ours_0_0.024_new.csv"),
-                ("ours_0_0.03_new_new.csv", "ours_0_0.03_new.csv"),
-            ]
+        aggregate_specs=(
+            *_specs(
+                [
+                    ("ql_0_0.csv", "{seed}/QL_0_0.csv"),
+                    ("mqm_0_0.006.csv", "{seed}/ours_0_0.006.csv"),
+                    ("mqm_0_0.012.csv", "{seed}/ours_0_0.012.csv"),
+                    ("mqm_0_0.018.csv", "{seed}/ours_0_0.018.csv"),
+                    ("mqm_0_0.024.csv", "{seed}/ours_0_0.024.csv"),
+                    ("mqm_0_0.03.csv", "{seed}/ours_0_0.03.csv"),
+                ],
+                source_workdir=r"Exp 6 Noise\autogenerated - works",
+                output_workdir=_results_dir("noisy-combination"),
+            ),
+            *_specs(
+                [
+                    ("qm_0_0.006.csv", "{seed}/ours_0_0.006_new_new.csv"),
+                    ("qm_0_0.012.csv", "{seed}/ours_0_0.012_new_new.csv"),
+                    ("qm_0_0.018.csv", "{seed}/ours_0_0.018_new_new.csv"),
+                    ("qm_0_0.024.csv", "{seed}/ours_0_0.024_new_new.csv"),
+                    ("qm_0_0.03.csv", "{seed}/ours_0_0.03_new_new.csv"),
+                ],
+                source_workdir=r"Exp 6 Noise\autogenerated - works",
+                output_workdir=_results_dir("noisy-combination"),
+            ),
         ),
-        plot_script="plot_final.py",
+        plot_script="plot_results.py",
+        notes=(
+            "Aggregated CSVs are written to 'results/noisy-combination/'.",
+        ),
     ),
 )
 
