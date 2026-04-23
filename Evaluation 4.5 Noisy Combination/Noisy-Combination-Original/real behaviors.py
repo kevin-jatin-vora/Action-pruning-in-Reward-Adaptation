@@ -3,12 +3,18 @@ import random
 import os
 import numpy as np
 import pickle
+from pathlib import Path
 from matplotlib import pyplot as plt
 import seaborn as sns
 import pandas as pd
 import time
 
 os.chdir(os.getcwd())
+BASE_DIR = (
+    Path(__file__).resolve().parents[2]
+    / "Evaluation 4.3 Gridworld Linear Combination - Q-M"
+    / "Dollar-Euro"
+)
 
 def read_mdp(mdp):
     """Function to read MDP file"""
@@ -153,7 +159,7 @@ def compute_behaviors(behavior_id, r, N_steps, max_steps, num_runs, test_steps, 
     """
     Learns or loads Q-tables and other data for a specific behavior.
     """
-    folder_path = f'D:/TMLR 2025/Exp 1 Fixed MDP FIxed R - Copy/Dollar-Euro/{avg}/behaviors_{behavior_id}_{nst}'
+    folder_path = BASE_DIR / str(avg) / f"behaviors_{behavior_id}_{nst}"
     os.makedirs(folder_path, exist_ok=True)
     
     q_og_file = os.path.join(folder_path, 'Q_og.npy')

@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-import os
+from pathlib import Path
 
 # Define the image directory
-image_dir = r'D:\TMLR 2025\Exp 1 Fixed MDP FIxed R\Dollar-Euro\0'
+image_dir = Path(__file__).resolve().parent / 'Dollar-Euro' / '0'
 
 # List of image filenames
 image_files = [
@@ -18,7 +18,7 @@ a=[1,2,4]
 c=0
 # Loop through each image and plot it
 for ax, img_file in zip(axes, image_files):
-    img_path = os.path.join(image_dir, img_file)
+    img_path = image_dir / img_file
     img = mpimg.imread(img_path)
     ax.imshow(img)
     ax.set_title(f"SBF = {a[c]}", fontsize=15)

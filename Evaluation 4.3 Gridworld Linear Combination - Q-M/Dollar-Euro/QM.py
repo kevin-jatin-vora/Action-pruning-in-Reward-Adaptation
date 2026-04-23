@@ -2,6 +2,7 @@ from scipy import stats
 import random
 import os
 import numpy as np
+from pathlib import Path
 #np.random.seed(6)
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -9,6 +10,12 @@ import pandas as pd
 import time
 import pickle
 os.chdir(os.getcwd())
+
+EXPERIMENT_DIR = Path(__file__).resolve().parent
+
+
+def behavior_dir(avg, nst, behavior_id):
+    return EXPERIMENT_DIR / str(avg) / f"behaviors_{behavior_id}_{nst}"
 
 def read_mdp(mdp):
 
@@ -127,8 +134,8 @@ def restrict_transition(matrix, max_bf):
 combined_dict = {}
 def load_and_combine_transitions(avg, nst):
     """Loads and combines the next state dictionaries from both behaviors."""
-    folder_path_b1 = os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_1_{nst}')
-    folder_path_b2 = os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_2_{nst}')
+    folder_path_b1 = behavior_dir(avg, nst, 1)
+    folder_path_b2 = behavior_dir(avg, nst, 2)
 
     dict_b1_file = os.path.join(folder_path_b1, 'next_states.pkl')
     dict_b2_file = os.path.join(folder_path_b2, 'next_states.pkl')
@@ -178,14 +185,14 @@ for avg in range(init,last):
         load_and_combine_transitions(avg,nst)
 
         # Load the pre-computed Q-values
-        q_p1 = np.load(os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_1_{nst}', 'Q_star.npy'))
-        q_p2 = np.load(os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_2_{nst}', 'Q_star.npy'))
-        q_m1 = np.load(os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_1_{nst}', 'Q_mu.npy'))
-        q_m2 = np.load(os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_2_{nst}', 'Q_mu.npy'))
+        q_p1 = np.load(behavior_dir(avg, nst, 1) / 'Q_star.npy')
+        q_p2 = np.load(behavior_dir(avg, nst, 2) / 'Q_star.npy')
+        q_m1 = np.load(behavior_dir(avg, nst, 1) / 'Q_mu.npy')
+        q_m2 = np.load(behavior_dir(avg, nst, 2) / 'Q_mu.npy')
 
         # Load and sum the memorized rewards
-        memorized_R1 = np.load(os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_1_{nst}', 'memorized_R.npy'))
-        memorized_R2 = np.load(os.path.join(f'D:\\TMLR 2025\\Exp 1 Fixed MDP FIxed R - Copy\\Dollar-Euro\\{avg}\\behaviors_2_{nst}', 'memorized_R.npy'))
+        memorized_R1 = np.load(behavior_dir(avg, nst, 1) / 'memorized_R.npy')
+        memorized_R2 = np.load(behavior_dir(avg, nst, 2) / 'memorized_R.npy')
         real_r = memorized_R1 + memorized_R2
 
 

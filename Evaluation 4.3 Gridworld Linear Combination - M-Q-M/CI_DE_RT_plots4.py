@@ -12,7 +12,7 @@ sns.set_style("darkgrid")
 base_dirs = [
     'Dollar-Euro',  # Path to first folder
     'Racetrack',   # Path to third folder
-    'Frozen lake'
+    'Frozen-Lake'
 ]
 
 # List of files for each subplot in a 3x3 grid

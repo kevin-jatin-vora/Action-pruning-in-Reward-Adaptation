@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Sep 21 17:42:53 2024
+
+@author: trive
+"""
+
 import math
 import os
 import pandas as pd
@@ -10,59 +17,25 @@ sns.set_style("darkgrid")
 
 # Define base directories for each row of the 3x3 grid
 base_dirs = [
-    'Dollar-Euro',  # Path to first folder
-    'Racetrack',   # Path to third folder
-    'Frozen lake'
+    'Linear-Combination',  # Path to first folder
+    'Nonlinear-Combination'   # Path to third folder
 ]
 
 # List of files for each subplot in a 3x3 grid
-# subplot_files = [
-#     [['ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv', 'ours_0_1_new.csv'],
-#      ['ours_0_2.csv', 'QL_0_2.csv', 'SFQL_0_2.csv', 'clipped_QL_0_2.csv', 'ours_0_2_new.csv'],
-#      ['ours_0_4.csv', 'QL_0_4.csv', 'SFQL_0_4.csv', 'clipped_QL_0_4.csv', 'ours_0_4_new.csv']],
-    
-#     [['ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv', 'ours_0_1_new.csv'],
-#      ['ours_0_5.csv', 'QL_0_5.csv', 'SFQL_0_5.csv', 'clipped_QL_0_5.csv', 'ours_0_5_new.csv'],
-#      ['ours_0_7.csv', 'QL_0_7.csv', 'SFQL_0_7.csv', 'clipped_QL_0_7.csv', 'ours_0_7_new.csv']],
-    
-#     [['ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv', 'ours_0_1_new.csv'],
-#      ['ours_0_2.csv', 'QL_0_2.csv', 'SFQL_0_2.csv', 'clipped_QL_0_2.csv', 'ours_0_2_new.csv'],
-#      ['ours_0_4.csv', 'QL_0_4.csv', 'SFQL_0_4.csv', 'clipped_QL_0_4.csv', 'ours_0_4_new.csv']],
-# ]
-# subplot_files = [
-#     [['ours_0_1.csv', 'ours_0_1_new.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv'],
-#      ['ours_0_2.csv', 'ours_0_2_new.csv', 'QL_0_2.csv', 'SFQL_0_2.csv', 'clipped_QL_0_2.csv'],
-#      ['ours_0_4.csv', 'ours_0_4_new.csv', 'QL_0_4.csv', 'SFQL_0_4.csv', 'clipped_QL_0_4.csv']],
-    
-#     [['ours_0_1.csv', 'ours_0_1_new.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv'],
-#      ['ours_0_5.csv', 'ours_0_5_new.csv', 'QL_0_5.csv', 'SFQL_0_5.csv', 'clipped_QL_0_5.csv'],
-#      ['ours_0_7.csv', 'ours_0_7_new.csv', 'QL_0_7.csv', 'SFQL_0_7.csv', 'clipped_QL_0_7.csv']],
-    
-#     [['ours_0_1.csv', 'ours_0_1_new.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv'],
-#      ['ours_0_2.csv', 'ours_0_2_new.csv', 'QL_0_2.csv', 'SFQL_0_2.csv', 'clipped_QL_0_2.csv'],
-#      ['ours_0_4.csv', 'ours_0_4_new.csv', 'QL_0_4.csv', 'SFQL_0_4.csv', 'clipped_QL_0_4.csv']],
-# ]
 subplot_files = [
-    [['ours_0_1_new.csv', 'ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv'],
-     ['ours_0_2_new.csv', 'ours_0_2.csv', 'QL_0_2.csv', 'SFQL_0_2.csv', 'clipped_QL_0_2.csv'],
-     ['ours_0_4_new.csv', 'ours_0_4.csv', 'QL_0_4.csv', 'SFQL_0_4.csv', 'clipped_QL_0_4.csv']],
-
-    [['ours_0_1_new.csv', 'ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv'],
-     ['ours_0_5_new.csv', 'ours_0_5.csv', 'QL_0_5.csv', 'SFQL_0_5.csv', 'clipped_QL_0_5.csv'],
-     ['ours_0_7_new.csv', 'ours_0_7.csv', 'QL_0_7.csv', 'SFQL_0_7.csv', 'clipped_QL_0_7.csv']],
-
-    [['ours_0_1_new.csv', 'ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped_QL_0_1.csv'],
-     ['ours_0_2_new.csv', 'ours_0_2.csv', 'QL_0_2.csv', 'SFQL_0_2.csv', 'clipped_QL_0_2.csv'],
-     ['ours_0_4_new.csv', 'ours_0_4.csv', 'QL_0_4.csv', 'SFQL_0_4.csv', 'clipped_QL_0_4.csv']]
+    [['ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped-QL_0_1.csv', 'ours_0_1_new.csv'],
+     ['ours_0_3.csv', 'QL_0_3.csv', 'SFQL_0_3.csv', 'clipped-QL_0_3.csv', 'ours_0_3_new.csv'],
+     ['ours_0_5.csv', 'QL_0_5.csv', 'SFQL_0_5.csv', 'clipped-QL_0_5.csv', 'ours_0_5_new.csv']],
+    
+    [['ours_0_1.csv', 'QL_0_1.csv', 'SFQL_0_1.csv', 'clipped-QL_0_1.csv', 'ours_0_1_new.csv'],
+     ['ours_0_3.csv', 'QL_0_3.csv', 'SFQL_0_3.csv', 'clipped-QL_0_3.csv', 'ours_0_3_new.csv'],
+     ['ours_0_5.csv', 'QL_0_5.csv', 'SFQL_0_5.csv', 'clipped-QL_0_5.csv', 'ours_0_5_new.csv']],
 ]
-
-
 
 # Define subplot parameters for each domain and method (3 domains, each with 3 different sets of params)
 subplot_params = [
-    [ {"w3": 150, "length": 1000}, {"w3": 150, "length": 1000}, {"w3": 150, "length": 1000}, {"w3": 150, "length": 1000}, {"w3": 150, "length": 1000} ],  # Domain 1
-    [ {"w3": 150, "length": 1300}, {"w3": 150, "length": 1300}, {"w3": 150, "length": 1300}, {"w3": 150, "length": 1300}, {"w3": 150, "length": 1300} ],  # Domain 2
-    [ {"w3": 150, "length": 900}, {"w3": 150, "length": 900}, {"w3": 150, "length": 900}, {"w3": 150, "length": 1000}, {"w3": 150, "length": 1000} ],  # Domain 3
+    [ {"w3": 90, "length": 1800}, {"w3": 90, "length": 1800}, {"w3": 90, "length": 1800}, {"w3": 130, "length": 1800}, {"w3": 130, "length": 1800} ],  # Domain 1
+    [ {"w3": 150, "length": 1500}, {"w3": 150, "length": 1500}, {"w3": 150, "length": 1500},{"w3": 150, "length": 1500}, {"w3": 130, "length": 1800}]
 ]
 
 # Confidence interval calculation function
@@ -77,12 +50,7 @@ def confidence_interval(data, confidence=0.95):
 # Function to plot data for a single subplot with confidence intervals
 def plot_subplot(ax, files, base_dir, params, color_map, rid, cid):
     global_min, global_max = float('inf'), float('-inf')
-    if(cid==0):
-        step=10
-    elif(cid==2):
-        step = 8
-    else:
-        step=4
+    step=4
     global_min, global_max = float('inf'), float('-inf')
     confidence_level = 0.95  # Set your desired confidence level
 
@@ -98,9 +66,8 @@ def plot_subplot(ax, files, base_dir, params, color_map, rid, cid):
         smoothed_ci_lower = np.convolve(mean_rewards - ci_values, np.ones(params[rid]["w3"]), 'valid') / params[rid]["w3"]
 
         x_axis = np.arange(smoothed_mean_rewards.shape[0]) * step
-        if(i!=0):
-            label = file.split('_')[0]
-        else:
+        label = file.replace('-','_').split('_')[0]
+        if(i==4):
             label="Q-M-V"
         if label not in color_map:
             # color_map[label] = plt.cm.tab10(len(color_map))
@@ -108,8 +75,7 @@ def plot_subplot(ax, files, base_dir, params, color_map, rid, cid):
                 color_map[label] = "#696969"  # Dim Gray
             else:
                 color_map[label] = plt.cm.tab10(len(color_map))  # Use tab10 for others
-                if(i>0):
-                    color_map[label] = plt.cm.tab10(len(color_map)-2)
+
 
         ax.plot(x_axis[:smoothed_mean_rewards.shape[0]], smoothed_mean_rewards[:], label=label, color=color_map[label])
         ax.fill_between(
@@ -119,7 +85,7 @@ def plot_subplot(ax, files, base_dir, params, color_map, rid, cid):
             alpha=0.25,
             color=color_map[label]
         )
-        ax.set_title("SBF = " + file.split("_")[-1].replace(".csv", ""), fontsize=20)
+        ax.set_title("SBF = " + file.split("_")[-2].replace(".csv", ""), fontsize=20)
 
         # Set axis label font size and reduce ticks for readability
         ax.tick_params(axis='both', labelsize=20)  # Increase tick font size
@@ -131,13 +97,13 @@ def plot_subplot(ax, files, base_dir, params, color_map, rid, cid):
         global_max = max(global_max, np.max(smoothed_ci_upper))
 
     return global_min, global_max
+
 # Create a 3x3 grid of subplots
-fig, axs = plt.subplots(3, 3, figsize=(20, 15))
+fig, axs = plt.subplots(2, 3, figsize=(20, 10))
 color_map = {}
 
-buffer=[0.05, 0.6, 0.05]
 # Transpose the grid structure to ensure each domain is in one column
-for col in range(3):  # Columns represent different domains
+for col in range(2):  # Columns represent different domains
     row_mins, row_maxs = [], []
     for row in range(3):  # Rows represent the different subplots within each domain
         global_min, global_max = plot_subplot(
@@ -155,23 +121,23 @@ for col in range(3):  # Columns represent different domains
     # Set common y-axis limits for the entire row
     common_ymin, common_ymax = min(row_mins), max(row_maxs)
     for row in range(3):
-        axs[col][row].set_ylim(common_ymin, common_ymax+buffer[col])
+        axs[col][row].set_ylim(common_ymin, common_ymax)
 
 # Set common x and y labels for the entire plot
-fig.text(0.5, 0, 'Step', ha='center', va='center', fontsize=20)
-fig.text(0.005, 0.5, 'Average Return', ha='center', va='center', rotation='vertical', fontsize=20)
+fig.text(0.5, 0.003, 'Step', ha='center', va='center', fontsize=20)
+fig.text(0.003, 0.5, 'Average Return', ha='center', va='center', rotation='vertical', fontsize=20)
 
 # Add a common legend outside the subplots, but closer to the figures
 handles, labels = [], []
 for label, color in color_map.items():
     handles.append(plt.Line2D([0], [0], linestyle='-', color=color))
     # labels.append(label)
-labels = ["Q-M", "M-Q-M" , "QL", "SFQL", "SQB"]
+labels = ["Q-M" , "QL", "SFQL", "SQB", "Q-M-V"]
 
 plt.figlegend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 1.0), ncol=5, labelspacing=0.1, fontsize=22)
 
 # Apply tight layout to avoid overlapping labels
-plt.tight_layout(rect=[0, 0, 1, 0.95])
-plt.savefig('CI_exp1_5.jpeg', bbox_inches='tight', dpi=600)
+plt.tight_layout(rect=[0, 0, 1, 0.93])
+plt.savefig('CI_exp2_5.jpeg', bbox_inches='tight', dpi=600)
 # Show the plot
 plt.show()
