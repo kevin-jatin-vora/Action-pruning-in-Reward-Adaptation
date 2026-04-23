@@ -92,7 +92,7 @@ fig.text(0.005, 0.5, 'Average Reward', ha='center', va='center', rotation='verti
 plt.rcParams['font.size'] = '10'
 
 plt.tight_layout()
-# plt.savefig('FL.png', bbox_inches='tight', dpi=600)
+plt.savefig('FL.png', bbox_inches='tight', dpi=600)
 
 plt.show()
 

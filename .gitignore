@@ -25,3 +25,6 @@ Stats.py
 **/*.png
 **/*.jpg
 **/*.jpeg
+!docs/assets/*.png
+!docs/assets/*.jpg
+!docs/assets/*.jpeg
