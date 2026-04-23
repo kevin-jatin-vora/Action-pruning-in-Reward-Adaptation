@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qmanip-reward-transfer"
+version = "0.1.0"
+description = "Research-ready runners and aggregation utilities for the Q-Manipulation reward transfer experiments."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "matplotlib>=3.8",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scikit-learn>=1.4",
+  "scipy>=1.11",
+  "seaborn>=0.13",
+  "tqdm>=4.66",
+]
+
+[project.scripts]
+qmanip = "qmanip.cli:main"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]

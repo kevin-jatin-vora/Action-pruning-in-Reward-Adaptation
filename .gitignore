@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+.env
+build/
+dist/
+
+.idea/
+.vscode/
+
+# Local curation: keep supplemental and duplicate material out of the
+# Git-focused repository view without deleting it from disk.
+Exp 1 Fixed MDP FIxed R - Copy/
+heatmaps/
+rebuttal/
+Stats.py
+
+# Generated experiment artifacts.
+**/[0-9]*/
+**/*.csv
+**/*.npy
+**/*.pkl
+**/*.png
+**/*.jpg
+**/*.jpeg
