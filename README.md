@@ -1,4 +1,4 @@
-# Q-Manipulation Reward Transfer Experiments
+# Action-pruning-in-Reward-Adaptation
 
 This repository contains the code for the TMLR paper *Provably Efficient Reward Transfer in Reinforcement Learning with Discrete Markov Decision Processes*.
 
